@@ -7,6 +7,7 @@ import retro.data
 import subprocess
 import sys
 import tarfile
+import zipfile
 import tempfile
 
 
@@ -30,12 +31,21 @@ def main():
             r = requests.get('https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz')
         elif sys.platform.startswith('darwin'):
             r = requests.get('https://steamcdn-a.akamaihd.net/client/installer/steamcmd_osx.tar.gz')
+        elif sys.platform.startswith('win32'):
+            r = requests.get('https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip')
         else:
             raise RuntimeError('Unknown platform %s' % sys.platform)
-        tarball = tarfile.open(fileobj=io.BytesIO(r.content))
-        tarball.extractall(dir)
 
-        command = ['%s/steamcmd.sh' % dir,
+        if sys.platform.startswith('win32'):
+            zfile = zipfile.ZipFile(io.BytesIO(r.content))
+            zfile.extractall(dir)
+            executable = 'steamcmd'
+        else:
+            tarball = tarfile.open(fileobj=io.BytesIO(r.content))
+            tarball.extractall(dir)
+            executable = 'steamcmd.sh'
+
+        command = [os.path.join(dir, executable),
                    '+login', username,
                    '+force_install_dir', dir,
                    '+@sSteamCmdForcePlatformType', 'windows',
